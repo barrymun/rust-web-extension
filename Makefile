@@ -1,2 +1,2 @@
 build:
-	wasm-pack build
+	cd extension && wasm-pack build && cd ../

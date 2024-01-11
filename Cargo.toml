@@ -1,13 +1,6 @@
-[package]
-name = "rust-web-extension"
-description = "A template for building a web extension with Rust"
-version = "0.1.0"
-repository = "https://github.com/barrymun/rust-web-extension"
-license = "MIT"
-edition = "2021"
-
-[lib]
-crate-type = ["cdylib"]
-
-[dependencies]
-wasm-bindgen = "0.2.89"
+[workspace]
+resolver = "2"
+members = [
+  "extension",
+  "scripts"
+]
