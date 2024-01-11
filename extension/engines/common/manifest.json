@@ -1,0 +1,28 @@
+{
+  "name": "rust-web-extension",
+  "description": "A template for building a web extension with Rust",
+  "version": "0.1.0",
+  "manifest_version": 3,
+  "permissions": [],
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "content.js",
+        "run.js"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "resources": [
+        "content_bg.wasm"
+      ]
+    }
+  ]
+}

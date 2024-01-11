@@ -1,6 +1,6 @@
 use std::{fs, env};
 use std::io::{Read, Write};
-use toml::Value as TomlValue;
+use serde_json::Value;
 use wasm_bindgen::throw_str;
 
 fn get_current_working_dir() -> String {
@@ -17,65 +17,41 @@ fn get_current_working_dir() -> String {
 
 fn main() {
     let cwd = get_current_working_dir();
-    let toml_file_path = cwd.clone() + "/extension/Cargo.toml";
-    let manifest_path = cwd.clone() + "/dist/manifest.json";
+    let common_manifest_path = cwd.clone() + "/extension/engines/common/manifest.json";
+    let engine_manifest_path = cwd.clone() + "/extension/engines/chromium/manifest.json";
+    let output_manifest_path = cwd.clone() + "/dist/manifest.json";
     let executable_path = cwd.clone() + "/dist/run.js";
     
-    // Read the contents of Cargo.toml from one directory below
-    let mut toml_content = String::new();
-    fs::File::open(&toml_file_path)
-        .expect("Unable to open Cargo.toml")
-        .read_to_string(&mut toml_content)
-        .expect("Unable to read Cargo.toml");
-    println!("Cargo.toml read successfully.");
+    let mut common_manifest_file = fs::File::open(&common_manifest_path).expect("Failed to open manifest.json");
+    let mut common_manifest_contents = String::new();
+    common_manifest_file
+        .read_to_string(&mut common_manifest_contents)
+        .expect("Failed to read manifest.json");
+    let common_manifest_json: Value = serde_json::from_str(&common_manifest_contents)
+        .expect("Failed to parse JSON from manifest.json");
+    
+    let mut engine_manifest_file = fs::File::open(&engine_manifest_path).expect("Failed to open manifest.json");
+    let mut engine_manifest_contents = String::new();
+    engine_manifest_file
+        .read_to_string(&mut engine_manifest_contents)
+        .expect("Failed to read manifest.json");
+    let engine_manifest_json: Value = serde_json::from_str(&engine_manifest_contents)
+        .expect("Failed to parse JSON from manifest.json");
 
-    // Parse the TOML content into a toml::Value
-    let cargo_data: TomlValue =
-        toml::from_str(&toml_content).expect("Unable to parse Cargo.toml");
+    // merge the JSON objects
+    let mut combined_json = common_manifest_json.as_object().unwrap().clone();
+    let engine_manifest_object = engine_manifest_json.as_object().unwrap();
+    for (key, value) in engine_manifest_object.iter() {
+        combined_json.insert(key.clone(), value.clone());
+    }
 
-    // Extract the values for "name", "version", and "description" from Cargo.toml
-    let name = cargo_data["package"]["name"]
-        .as_str()
-        .expect("Missing 'name' in Cargo.toml");
-    let version = cargo_data["package"]["version"]
-        .as_str()
-        .expect("Missing 'version' in Cargo.toml");
-    let description = cargo_data["package"]["description"]
-        .as_str()
-        .expect("Missing 'description' in Cargo.toml");
-
-    // Create a JSON object representing your manifest
-    let manifest = serde_json::json!({
-        "manifest_version": 3,
-        "name": name,
-        "version": version,
-        "description": description,
-        "permissions": [],
-        "content_scripts": [
-            {
-                "matches": ["<all_urls>"],
-                "js": ["content.js", "run.js"]
-            }
-        ],
-        "web_accessible_resources": [
-            {
-                "resources": ["content_bg.wasm"],
-                "matches": ["<all_urls>"]
-            }
-        ],
-    });
-
-    // Convert the JSON object to a nicely formatted JSON string
-    let pretty_json = serde_json::to_string_pretty(&manifest).expect("Unable to format JSON");
-
-    // Create a new file named "manifest.json" in the destination directory and open it for writing
-    let mut manifest_file = fs::File::create(&manifest_path).expect("Unable to create file");
-
-    // Write the nicely formatted JSON content to the file
-    manifest_file.write_all(pretty_json.as_bytes())
-        .expect("Unable to write to file");
-
-    println!("manifest.json file created in {} successfully.", manifest_path);
+    // convert the JSON object to a nicely formatted JSON string
+    let pretty_json_str = serde_json::to_string_pretty(&combined_json).expect("Unable to format JSON");
+    let mut output_manifest_file = fs::File::create(&output_manifest_path).expect("Failed to create combined.json");
+    output_manifest_file
+        .write_all(pretty_json_str.as_bytes())
+        .expect("Failed to write combined.json");
+    println!("manifest.json file created in {} successfully.", output_manifest_path);
 
     let executable_code = "const runtime = chrome.runtime || browser.runtime;(async () => await wasm_bindgen(runtime.getURL('content_bg.wasm')))();";
     let mut executable_file = fs::File::create(&executable_path).expect("Unable to create file");
