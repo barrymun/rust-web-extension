@@ -1,0 +1,7 @@
+[package]
+name = "rust-web-extension"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+wasm-pack = "0.12.1"
