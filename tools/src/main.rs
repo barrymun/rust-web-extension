@@ -18,7 +18,7 @@ fn get_current_working_dir() -> String {
 fn main() {
     let cwd = get_current_working_dir();
     let toml_file_path = cwd.clone() + "/extension/Cargo.toml";
-    let destination_path = cwd.clone() + "/extension/pkg/manifest.json";
+    let destination_path = cwd.clone() + "/dist/manifest.json";
     
     // Read the contents of Cargo.toml from one directory below
     let mut toml_content = String::new();

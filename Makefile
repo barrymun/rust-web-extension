@@ -1,6 +1,6 @@
 build:
-	rm -rf extension/pkg && \
+	rm -rf dist && \
 	cargo build && \
-	make -C extension && \
-	make -C scripts/content && \
+	make -C extension build && \
+	make -C scripts/content build && \
 	cargo run --bin tools
