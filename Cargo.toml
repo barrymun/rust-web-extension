@@ -1,6 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-  "extension",
+  "extension", 
+  "scripts",
+  "scripts/content",
   "tools"
 ]

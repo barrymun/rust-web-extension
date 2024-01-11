@@ -1,9 +1,24 @@
-use std::fs;
+use std::{fs, env};
 use std::io::{Read, Write};
 use toml::Value as TomlValue;
+use wasm_bindgen::throw_str;
+
+fn get_current_working_dir() -> String {
+    match env::current_dir() {
+        Ok(current_dir) => {
+            return current_dir.to_str().unwrap().to_string();
+        }
+        Err(err) => {
+            eprintln!("Error getting current working directory: {}", err);
+            throw_str(std::format!("Error getting current working directory: {}", err).as_str());
+        }
+    }
+}
 
 fn main() {
-    let toml_file_path = "../extension/Cargo.toml";
+    let cwd = get_current_working_dir();
+    let toml_file_path = cwd.clone() + "/extension/Cargo.toml";
+    let destination_path = cwd.clone() + "/extension/pkg/manifest.json";
     
     // Read the contents of Cargo.toml from one directory below
     let mut toml_content = String::new();
@@ -11,6 +26,7 @@ fn main() {
         .expect("Unable to open Cargo.toml")
         .read_to_string(&mut toml_content)
         .expect("Unable to read Cargo.toml");
+    println!("Cargo.toml read successfully.");
 
     // Parse the TOML content into a toml::Value
     let cargo_data: TomlValue =
@@ -37,9 +53,6 @@ fn main() {
 
     // Convert the JSON object to a nicely formatted JSON string
     let pretty_json = serde_json::to_string_pretty(&manifest).expect("Unable to format JSON");
-
-    // Define the path for the manifest.json file in the destination directory
-    let destination_path = "../extension/pkg/manifest.json";
 
     // Create a new file named "manifest.json" in the destination directory and open it for writing
     let mut file = fs::File::create(&destination_path).expect("Unable to create file");

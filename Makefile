@@ -1,6 +1,6 @@
 build:
-	cd extension && \
-	rm -rf pkg && \
-	wasm-pack build && \
-	cd ../tools && \
-	cargo run
+	rm -rf extension/pkg && \
+	cargo build && \
+	make -C extension && \
+	make -C scripts/content && \
+	cargo run --bin tools
