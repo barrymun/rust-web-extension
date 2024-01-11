@@ -1,40 +1,52 @@
-use std::fs::File;
-use std::io::{self, Read};
-use toml::Value;
-use serde::Deserialize;
-use serde_json::to_writer_pretty;
-use serde_json::from_value;
+use std::fs;
+use std::io::{Read, Write};
+use toml::Value as TomlValue;
 
-#[derive(Debug, Deserialize)]
-struct CargoToml {
-    package: Package,
-}
+fn main() {
+    let toml_file_path = "../extension/Cargo.toml";
+    
+    // Read the contents of Cargo.toml from one directory below
+    let mut toml_content = String::new();
+    fs::File::open(&toml_file_path)
+        .expect("Unable to open Cargo.toml")
+        .read_to_string(&mut toml_content)
+        .expect("Unable to read Cargo.toml");
 
-#[derive(Debug, Deserialize)]
-struct Package {
-    name: String,
-    version: String,
-}
+    // Parse the TOML content into a toml::Value
+    let cargo_data: TomlValue =
+        toml::from_str(&toml_content).expect("Unable to parse Cargo.toml");
 
-fn main() -> Result<(), std::io::Error> {
-    // Read the Cargo.toml file
-    // let mut toml_contents = String::new();
-    // File::open("Cargo.toml")?.read_to_string(&mut toml_contents)?;
+    // Extract the values for "name", "version", and "description" from Cargo.toml
+    let name = cargo_data["package"]["name"]
+        .as_str()
+        .expect("Missing 'name' in Cargo.toml");
+    let version = cargo_data["package"]["version"]
+        .as_str()
+        .expect("Missing 'version' in Cargo.toml");
+    let description = cargo_data["package"]["description"]
+        .as_str()
+        .expect("Missing 'description' in Cargo.toml");
 
-    // // Parse the Cargo.toml file as TOML
-    // let cargo_toml: Value = toml::from_str(&toml_contents)?;
+    // Create a JSON object representing your manifest
+    let manifest = serde_json::json!({
+        "manifest_version": 3,
+        "name": name,
+        "version": version,
+        "description": description,
+    });
 
-    // // Deserialize the package section
-    // let package: CargoToml = from_value(cargo_toml["package"].clone())?;
+    // Convert the JSON object to a nicely formatted JSON string
+    let pretty_json = serde_json::to_string_pretty(&manifest).expect("Unable to format JSON");
 
-    // // Create a JSON representation of the package
-    // let json_contents = serde_json::to_string_pretty(&package)?;
+    // Define the path for the manifest.json file in the destination directory
+    let destination_path = "../extension/pkg/manifest.json";
 
-    // // Write the JSON to manifest.json
-    // let mut json_file = File::create("manifest.json")?;
-    // to_writer_pretty(&mut json_file, &json_contents)?;
+    // Create a new file named "manifest.json" in the destination directory and open it for writing
+    let mut file = fs::File::create(&destination_path).expect("Unable to create file");
 
-    println!("manifest.json file created successfully!");
+    // Write the nicely formatted JSON content to the file
+    file.write_all(pretty_json.as_bytes())
+        .expect("Unable to write to file");
 
-    Ok(())
+    println!("manifest.json file created in {} successfully.", destination_path);
 }
