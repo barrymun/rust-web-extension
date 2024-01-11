@@ -1,7 +1,21 @@
-use std::{fs, env};
+use std::{fs, env, fmt};
 use std::io::{Read, Write};
 use serde_json::Value;
 use wasm_bindgen::throw_str;
+
+enum EngineType {
+    Chromium,
+    Gecko,
+}
+impl fmt::Display for EngineType {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            EngineType::Chromium => write!(f, "chromium"),
+            EngineType::Gecko => write!(f, "gecko"),
+        }
+    }
+}
+use EngineType::*;
 
 fn get_current_working_dir() -> String {
     match env::current_dir() {
@@ -15,10 +29,27 @@ fn get_current_working_dir() -> String {
     }
 }
 
-fn main() {
+fn main() {    
+    let args: Vec<String> = env::args().collect();
+    if args.len() < 2 {
+        println!("Usage: {} <chromium|gecko>", args[0]);
+        return;
+    }
+    
+    let engine = match args[1].as_str() {
+        "chromium" => Chromium,
+        "gecko" => Gecko,
+        _ => {
+            println!("Invalid argument. Usage: {} <chromium|gecko>", args[0]);
+            return;
+        }
+    };
+    let engine_str = engine.to_string();
+    println!("Building for {}", engine_str);
+    
     let cwd = get_current_working_dir();
     let common_manifest_path = cwd.clone() + "/extension/engines/common/manifest.json";
-    let engine_manifest_path = cwd.clone() + "/extension/engines/chromium/manifest.json";
+    let engine_manifest_path = cwd.clone() + "/extension/engines/" + &engine_str + "/manifest.json";
     let output_manifest_path = cwd.clone() + "/dist/manifest.json";
     let executable_path = cwd.clone() + "/dist/run.js";
     
