@@ -3,5 +3,8 @@ name = "rust-web-extension"
 version = "0.1.0"
 edition = "2021"
 
+[lib]
+crate-type = ["cdylib"]
+
 [dependencies]
-wasm-pack = "0.12.1"
+wasm-bindgen = "0.2.89"
