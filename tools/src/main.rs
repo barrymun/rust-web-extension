@@ -49,6 +49,12 @@ fn main() {
         "name": name,
         "version": version,
         "description": description,
+        "content_scripts": [
+            {
+                "matches": ["<all_urls>"],
+                "js": ["content.js"]
+            }
+        ],
     });
 
     // Convert the JSON object to a nicely formatted JSON string

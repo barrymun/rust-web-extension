@@ -1,16 +1,12 @@
-// use wasm_bindgen::prelude::*;
-// use web_sys::{window, Document, Element, HtmlElement};
+use wasm_bindgen::prelude::*;
 
-// #[wasm_bindgen]
-// pub fn add_border() {
-//     // Get the current document and body element
-//     let document = window().unwrap().document().unwrap();
-//     let body = document.body().unwrap();
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(js_namespace=["console"])]
+    fn log(message: &str);
+}
 
-//     // Create a new <style> element and set its CSS
-//     let style = document.create_element("style").unwrap().unchecked_into::<HtmlElement>();
-//     style.set_inner_html("body { border: 5px solid red; }");
-
-//     // Append the <style> element to the <body>
-//     body.append_child(&style).unwrap();
-// }
+#[wasm_bindgen(start)]
+pub fn initialize() {
+    log("Hello from WebAssembly!");
+}

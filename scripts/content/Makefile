@@ -1,2 +1,2 @@
 build:
-	wasm-pack build --target web --out-dir "$(PWD)/dist"
+	wasm-pack build --target no-modules --out-dir "$(PWD)/dist"
