@@ -1,12 +1,8 @@
 use wasm_bindgen::prelude::*;
-
-#[wasm_bindgen]
-extern "C" {
-    #[wasm_bindgen(js_namespace=["console"])]
-    fn log(message: &str);
-}
+use wasm_bindgen::JsValue;
+use web_sys::console::log_1;
 
 #[wasm_bindgen(start)]
-pub fn initialize() {
-    log("Hello from WebAssembly!");
+pub fn main() {
+    log_1(&JsValue::from_str("Hello world!"));
 }
