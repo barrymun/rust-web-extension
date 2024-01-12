@@ -1,6 +1,6 @@
-use std::{fs, env, fmt};
-use std::io::{Read, Write};
 use serde_json::Value;
+use std::io::{Read, Write};
+use std::{env, fmt, fs};
 use wasm_bindgen::throw_str;
 
 enum EngineType {
@@ -29,13 +29,13 @@ fn get_current_working_dir() -> String {
     }
 }
 
-fn main() {    
+fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
         println!("Usage: {} <chromium|gecko>", args[0]);
         return;
     }
-    
+
     let engine = match args[1].as_str() {
         "chromium" => Chromium,
         "gecko" => Gecko,
@@ -46,22 +46,24 @@ fn main() {
     };
     let engine_str = engine.to_string();
     println!("Building for {}", engine_str);
-    
+
     let cwd = get_current_working_dir();
     let common_manifest_path = cwd.clone() + "/extension/engines/common/manifest.json";
     let engine_manifest_path = cwd.clone() + "/extension/engines/" + &engine_str + "/manifest.json";
     let output_manifest_path = cwd.clone() + "/dist/manifest.json";
     let executable_path = cwd.clone() + "/dist/run.js";
-    
-    let mut common_manifest_file = fs::File::open(&common_manifest_path).expect("Failed to open manifest.json");
+
+    let mut common_manifest_file =
+        fs::File::open(common_manifest_path).expect("Failed to open manifest.json");
     let mut common_manifest_contents = String::new();
     common_manifest_file
         .read_to_string(&mut common_manifest_contents)
         .expect("Failed to read manifest.json");
     let common_manifest_json: Value = serde_json::from_str(&common_manifest_contents)
         .expect("Failed to parse JSON from manifest.json");
-    
-    let mut engine_manifest_file = fs::File::open(&engine_manifest_path).expect("Failed to open manifest.json");
+
+    let mut engine_manifest_file =
+        fs::File::open(engine_manifest_path).expect("Failed to open manifest.json");
     let mut engine_manifest_contents = String::new();
     engine_manifest_file
         .read_to_string(&mut engine_manifest_contents)
@@ -77,12 +79,17 @@ fn main() {
     }
 
     // convert the JSON object to a nicely formatted JSON string
-    let pretty_json_str = serde_json::to_string_pretty(&combined_json).expect("Unable to format JSON");
-    let mut output_manifest_file = fs::File::create(&output_manifest_path).expect("Failed to create combined.json");
+    let pretty_json_str =
+        serde_json::to_string_pretty(&combined_json).expect("Unable to format JSON");
+    let mut output_manifest_file =
+        fs::File::create(&output_manifest_path).expect("Failed to create combined.json");
     output_manifest_file
         .write_all(pretty_json_str.as_bytes())
         .expect("Failed to write combined.json");
-    println!("manifest.json file created in {} successfully.", output_manifest_path);
+    println!(
+        "manifest.json file created in {} successfully.",
+        output_manifest_path
+    );
 
     let executable_code = "const runtime = chrome.runtime || browser.runtime;(async () => await wasm_bindgen(runtime.getURL('content_bg.wasm')))();";
     let mut executable_file = fs::File::create(&executable_path).expect("Unable to create file");
@@ -90,5 +97,4 @@ fn main() {
         .write_all(executable_code.as_bytes())
         .expect("Unable to write to file");
     println!("run.js file created in {} successfully.", executable_path);
-
 }

@@ -1,3 +1,10 @@
+setup:
+	rm -f .git/hooks/pre-commit && \
+	cp pre-commit .git/hooks/pre-commit
+
+lint:
+	./pre-commit
+
 build:
 	rm -rf dist && \
 	cargo build && \
