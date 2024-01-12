@@ -12,4 +12,4 @@ build:
 
 build-chromium:
 	make build && \
-	cargo run --bin tools chromium
+	cargo run --bin browser-pack chromium

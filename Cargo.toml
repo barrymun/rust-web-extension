@@ -2,5 +2,5 @@
 resolver = "2"
 members = [
   "scripts/content",
-  "tools"
+  "tools/browser-pack"
 ]
