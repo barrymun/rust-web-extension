@@ -1,21 +1,10 @@
+mod utils;
+
 use serde_json::Value;
 use std::io::{Read, Write};
-use std::{env, fmt, fs};
+use std::{env, fs};
+use utils::types::EngineType::{Chromium, Gecko};
 use wasm_bindgen::throw_str;
-
-enum EngineType {
-    Chromium,
-    Gecko,
-}
-impl fmt::Display for EngineType {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        match self {
-            EngineType::Chromium => write!(f, "chromium"),
-            EngineType::Gecko => write!(f, "gecko"),
-        }
-    }
-}
-use EngineType::*;
 
 fn get_current_working_dir() -> String {
     match env::current_dir() {
