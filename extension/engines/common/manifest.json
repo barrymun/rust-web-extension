@@ -7,7 +7,7 @@
   "content_scripts": [
     {
       "matches": [
-        "<all_urls>"
+        "*://*.example.com/*"
       ],
       "js": [
         "content.js",
@@ -18,7 +18,7 @@
   "web_accessible_resources": [
     {
       "matches": [
-        "<all_urls>"
+        "*://*.example.com/*"
       ],
       "resources": [
         "content_bg.wasm"
