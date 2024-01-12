@@ -15,7 +15,7 @@ Before using this extension, ensure that you have the following software install
 1. Clone this repository to your local machine
 2. Change into the project directory
 3. Run the following command to set up the pre-commit hook:
-   - `make setup`
+   - `make prepare`
    This will add the pre-commit file to the ".git/hooks" directory, ensuring code quality and formatting checks before committing.
 
 ## Usage

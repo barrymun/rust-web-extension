@@ -1,4 +1,4 @@
-setup:
+prepare:
 	rm -f .git/hooks/pre-commit && \
 	cp pre-commit .git/hooks/pre-commit
 
