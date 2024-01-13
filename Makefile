@@ -14,3 +14,7 @@ build:
 build-chromium:
 	make build && \
 	cargo run --bin browser-pack chromium
+
+build-gecko:
+	make build && \
+	cargo run --bin browser-pack gecko
