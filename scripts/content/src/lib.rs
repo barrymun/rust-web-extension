@@ -4,5 +4,7 @@ use web_sys::console::log_1;
 
 #[wasm_bindgen(start)]
 pub fn main() {
-    log_1(&JsValue::from_str("Hello world!"));
+    log_1(&JsValue::from_str(
+        "This should appear in your browser's console",
+    ));
 }

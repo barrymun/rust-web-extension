@@ -10,8 +10,7 @@
         "*://*.example.com/*"
       ],
       "js": [
-        "content.js",
-        "run.js"
+        "content.js"
       ]
     }
   ],
@@ -21,8 +20,12 @@
         "*://*.example.com/*"
       ],
       "resources": [
+        "background_bg.wasm",
         "content_bg.wasm"
       ]
     }
-  ]
+  ],
+  "content_security_policy": {
+    "extension_pages": "script-src 'self' 'wasm-unsafe-eval'; object-src 'self';"
+  }
 }

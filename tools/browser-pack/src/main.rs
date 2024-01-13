@@ -39,8 +39,8 @@ fn main() {
     let cwd = get_current_working_dir();
     let common_manifest_path = cwd.clone() + "/extension/engines/common/manifest.json";
     let engine_manifest_path = cwd.clone() + "/extension/engines/" + &engine_str + "/manifest.json";
-    let output_manifest_path = cwd.clone() + "/dist/manifest.json";
-    let executable_path = cwd.clone() + "/dist/run.js";
+    let output_path = cwd.clone() + "/dist";
+    let output_manifest_path = output_path.clone() + "/manifest.json";
 
     let mut common_manifest_file =
         fs::File::open(common_manifest_path).expect("Failed to open manifest.json");
@@ -80,10 +80,19 @@ fn main() {
         output_manifest_path
     );
 
-    let executable_code = "const runtime = chrome.runtime || browser.runtime;(async () => await wasm_bindgen(runtime.getURL('content_bg.wasm')))();";
-    let mut executable_file = fs::File::create(&executable_path).expect("Unable to create file");
-    executable_file
-        .write_all(executable_code.as_bytes())
-        .expect("Unable to write to file");
-    println!("run.js file created in {} successfully.", executable_path);
+    let script_types = ["background", "content"];
+    for value in &script_types {
+        let executable_code = format!(
+            "const runtime = chrome.runtime || browser.runtime;(async () => await wasm_bindgen(runtime.getURL('{}_bg.wasm')))();",
+            value
+        );
+        let executable_path = output_path.clone() + "/" + value + ".js";
+        let mut executable_file = fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&executable_path)
+            .expect("Failed to open file for appending");
+        writeln!(executable_file, "{}", executable_code)
+            .expect("Failed to write to file for appending");
+    }
 }
