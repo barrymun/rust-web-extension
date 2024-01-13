@@ -18,6 +18,20 @@ fn get_current_working_dir() -> String {
     }
 }
 
+/// removes extraneous files from the specified directory.
+/// the files to remove are specified in the `files_to_remove` vector.
+fn remove_extraneous_files() {
+    let cwd = get_current_working_dir();
+    let output_path = cwd.clone() + "/dist";
+    let files_to_remove = vec![".gitignore", "package.json"];
+    for file_name in files_to_remove {
+        let file_path = format!("{}/{}", output_path, file_name);
+        if fs::remove_file(&file_path).is_ok() {
+            println!("Removed: {:?}", file_path);
+        }
+    }
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
@@ -95,4 +109,6 @@ fn main() {
         writeln!(executable_file, "{}", executable_code)
             .expect("Failed to write to file for appending");
     }
+
+    remove_extraneous_files();
 }
