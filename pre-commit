@@ -5,7 +5,7 @@ cargo clippy --fix --allow-staged
 
 # check the exit status of the previous command
 if [ $? -ne 0 ]; then
-    echo "Rustfmt check failed. Please fix formatting issues before committing."
+    echo "Clippy check failed. Please fix formatting issues before committing."
     exit 1  # Exit with a non-zero status code to prevent the commit
 fi
 
@@ -14,7 +14,7 @@ cargo fmt --all
 
 # check the exit status of the previous command
 if [ $? -ne 0 ]; then
-    echo "Clippy check failed. Please fix code issues before committing."
+    echo "Rustfmt check failed. Please fix code issues before committing."
     exit 1  # Exit with a non-zero status code to prevent the commit
 fi
 
