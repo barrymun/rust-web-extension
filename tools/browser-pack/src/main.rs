@@ -19,19 +19,39 @@ fn get_current_working_dir() -> String {
     }
 }
 
+/// creates the executable code for the scripts.
+fn append_script_executable_code(output_dir: &str) -> io::Result<()> {
+    let script_types = ["background", "content", "popup"];
+    for value in &script_types {
+        let executable_code = format!(
+            "const runtime = chrome.runtime || browser.runtime;(async () => await wasm_bindgen(runtime.getURL('{}_bg.wasm')))();",
+            value
+        );
+        let executable_dir = output_dir.to_owned() + "/" + value + ".js";
+        let mut executable_file = fs::OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&executable_dir)
+            .expect("Failed to open file for appending");
+        writeln!(executable_file, "{}", executable_code)
+            .expect("Failed to write to file for appending");
+    }
+    Ok(())
+}
+
 /// recursively copies the contents of the specified directory to the output directory.
-fn copy_popup_assets(src_dir: &Path, output_dir: &Path) -> io::Result<()> {
-    for entry in fs::read_dir(src_dir)? {
+fn copy_popup_assets(src_dir_path: &Path, output_dir_path: &Path) -> io::Result<()> {
+    for entry in fs::read_dir(src_dir_path)? {
         let entry = entry?;
         let entry_path = entry.path();
 
         if entry_path.is_dir() {
             // if it's a directory, recursively copy its contents
-            copy_popup_assets(&entry_path, output_dir)?;
+            copy_popup_assets(&entry_path, output_dir_path)?;
         } else if entry_path.is_file() {
             // if it's a file, copy it to the destination
             let entry_name = entry_path.file_name().unwrap();
-            let dest_path = output_dir.join(entry_name);
+            let dest_path = output_dir_path.join(entry_name);
             fs::copy(&entry_path, &dest_path)?;
         }
     }
@@ -53,16 +73,15 @@ fn copy_icons() -> io::Result<()> {
 
 /// removes extraneous files from the specified directory.
 /// the files to remove are specified in the `files_to_remove` vector.
-fn remove_extraneous_files() {
-    let cwd = get_current_working_dir();
-    let output_path = cwd.clone() + "/dist";
+fn remove_extraneous_files(output_dir: &str) -> io::Result<()> {
     let files_to_remove = vec![".gitignore", "package.json"];
     for file_name in files_to_remove {
-        let file_path = format!("{}/{}", output_path, file_name);
-        if fs::remove_file(&file_path).is_ok() {
-            println!("Removed: {:?}", file_path);
+        let file_dir = format!("{}/{}", output_dir, file_name);
+        if fs::remove_file(&file_dir).is_ok() {
+            println!("Removed: {:?}", file_dir);
         }
     }
+    Ok(())
 }
 
 fn main() {
@@ -84,14 +103,14 @@ fn main() {
     println!("Building for {}", engine_str);
 
     let cwd = get_current_working_dir();
-    let common_manifest_path = cwd.clone() + "/extension/engines/common/manifest.json";
-    let engine_manifest_path = cwd.clone() + "/extension/engines/" + &engine_str + "/manifest.json";
-    let output_path = cwd.clone() + "/dist";
-    let output_manifest_path = output_path.clone() + "/manifest.json";
-    let popup_assets_path = cwd.clone() + "/scripts/popup/assets";
+    let common_manifest_dir = cwd.clone() + "/extension/engines/common/manifest.json";
+    let engine_manifest_dir = cwd.clone() + "/extension/engines/" + &engine_str + "/manifest.json";
+    let output_dir = cwd.clone() + "/dist";
+    let output_manifest_dir = output_dir.clone() + "/manifest.json";
+    let popup_assets_dir = cwd.clone() + "/scripts/popup/assets";
 
     let mut common_manifest_file =
-        fs::File::open(common_manifest_path).expect("Failed to open manifest.json");
+        fs::File::open(common_manifest_dir).expect("Failed to open manifest.json");
     let mut common_manifest_contents = String::new();
     common_manifest_file
         .read_to_string(&mut common_manifest_contents)
@@ -100,7 +119,7 @@ fn main() {
         .expect("Failed to parse JSON from manifest.json");
 
     let mut engine_manifest_file =
-        fs::File::open(engine_manifest_path).expect("Failed to open manifest.json");
+        fs::File::open(engine_manifest_dir).expect("Failed to open manifest.json");
     let mut engine_manifest_contents = String::new();
     engine_manifest_file
         .read_to_string(&mut engine_manifest_contents)
@@ -119,45 +138,40 @@ fn main() {
     let pretty_json_str =
         serde_json::to_string_pretty(&combined_json).expect("Unable to format JSON");
     let mut output_manifest_file =
-        fs::File::create(&output_manifest_path).expect("Failed to create combined.json");
+        fs::File::create(&output_manifest_dir).expect("Failed to create combined.json");
     output_manifest_file
         .write_all(pretty_json_str.as_bytes())
         .expect("Failed to write combined.json");
     println!(
         "manifest.json file created in {} successfully.",
-        output_manifest_path
+        output_manifest_dir
     );
 
-    let script_types = ["background", "content", "popup"];
-    for value in &script_types {
-        let executable_code = format!(
-            "const runtime = chrome.runtime || browser.runtime;(async () => await wasm_bindgen(runtime.getURL('{}_bg.wasm')))();",
-            value
-        );
-        let executable_path = output_path.clone() + "/" + value + ".js";
-        let mut executable_file = fs::OpenOptions::new()
-            .create(true)
-            .append(true)
-            .open(&executable_path)
-            .expect("Failed to open file for appending");
-        writeln!(executable_file, "{}", executable_code)
-            .expect("Failed to write to file for appending");
+    let res = append_script_executable_code(&output_dir);
+    if res.is_err() {
+        println!("Error appending executable code: {:?}", res);
+    } else {
+        println!("Appended executable code successfully.");
     }
 
-    let copy_popup_assets_result =
-        copy_popup_assets(Path::new(&popup_assets_path), Path::new(&output_path));
-    if copy_popup_assets_result.is_err() {
-        println!("Error copying popup assets: {:?}", copy_popup_assets_result);
+    let res = copy_popup_assets(Path::new(&popup_assets_dir), Path::new(&output_dir));
+    if res.is_err() {
+        println!("Error copying popup assets: {:?}", res);
     } else {
         println!("Copied popup assets successfully.");
     }
 
-    let copy_icons_result = copy_icons();
-    if copy_icons_result.is_err() {
-        println!("Error copying icons: {:?}", copy_icons_result);
+    let res = copy_icons();
+    if res.is_err() {
+        println!("Error copying icons: {:?}", res);
     } else {
         println!("Copied icons successfully.");
     }
 
-    remove_extraneous_files();
+    let res = remove_extraneous_files(&output_dir);
+    if res.is_err() {
+        println!("Error removing extraneous files: {:?}", res);
+    } else {
+        println!("Removed extraneous files successfully.");
+    }
 }
