@@ -48,7 +48,7 @@ fn copy_icons() -> io::Result<()> {
     if !output_dir_path.exists() {
         fs::create_dir_all(&output_dir)?;
     }
-    copy_popup_assets(Path::new(&src_dir), Path::new(&output_dir))
+    return copy_popup_assets(Path::new(&src_dir), Path::new(&output_dir));
 }
 
 /// removes extraneous files from the specified directory.
