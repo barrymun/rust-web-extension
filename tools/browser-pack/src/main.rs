@@ -19,20 +19,6 @@ fn get_current_working_dir() -> String {
     }
 }
 
-/// removes extraneous files from the specified directory.
-/// the files to remove are specified in the `files_to_remove` vector.
-fn remove_extraneous_files() {
-    let cwd = get_current_working_dir();
-    let output_path = cwd.clone() + "/dist";
-    let files_to_remove = vec![".gitignore", "package.json"];
-    for file_name in files_to_remove {
-        let file_path = format!("{}/{}", output_path, file_name);
-        if fs::remove_file(&file_path).is_ok() {
-            println!("Removed: {:?}", file_path);
-        }
-    }
-}
-
 /// recursively copies the contents of the specified directory to the output directory.
 fn copy_popup_assets(src_dir: &Path, output_dir: &Path) -> io::Result<()> {
     for entry in fs::read_dir(src_dir)? {
@@ -50,6 +36,33 @@ fn copy_popup_assets(src_dir: &Path, output_dir: &Path) -> io::Result<()> {
         }
     }
     Ok(())
+}
+
+/// copies the icons from the extension directory to the output directory.
+/// if the output directory does not exist, it will be created.
+fn copy_icons() -> io::Result<()> {
+    let cwd = get_current_working_dir();
+    let src_dir = cwd.clone() + "/extension/icons";
+    let output_dir = cwd.clone() + "/dist/icons";
+    let output_dir_path = Path::new(&output_dir);
+    if !output_dir_path.exists() {
+        fs::create_dir_all(&output_dir)?;
+    }
+    copy_popup_assets(Path::new(&src_dir), Path::new(&output_dir))
+}
+
+/// removes extraneous files from the specified directory.
+/// the files to remove are specified in the `files_to_remove` vector.
+fn remove_extraneous_files() {
+    let cwd = get_current_working_dir();
+    let output_path = cwd.clone() + "/dist";
+    let files_to_remove = vec![".gitignore", "package.json"];
+    for file_name in files_to_remove {
+        let file_path = format!("{}/{}", output_path, file_name);
+        if fs::remove_file(&file_path).is_ok() {
+            println!("Removed: {:?}", file_path);
+        }
+    }
 }
 
 fn main() {
@@ -137,6 +150,13 @@ fn main() {
         println!("Error copying popup assets: {:?}", copy_popup_assets_result);
     } else {
         println!("Copied popup assets successfully.");
+    }
+
+    let copy_icons_result = copy_icons();
+    if copy_icons_result.is_err() {
+        println!("Error copying icons: {:?}", copy_icons_result);
+    } else {
+        println!("Copied icons successfully.");
     }
 
     remove_extraneous_files();
