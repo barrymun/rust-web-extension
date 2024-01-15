@@ -4,7 +4,7 @@ use serde_json::Value;
 use std::io::{self, Read, Write};
 use std::path::Path;
 use std::{env, fs};
-use utils::types::EngineType::{Chromium, Gecko};
+use utils::types::EngineType::{self, Chromium, Gecko};
 use wasm_bindgen::throw_str;
 
 fn get_current_working_dir() -> String {
@@ -17,6 +17,74 @@ fn get_current_working_dir() -> String {
             throw_str(std::format!("Error getting current working directory: {}", err).as_str());
         }
     }
+}
+
+fn get_engine() -> EngineType {
+    let args: Vec<String> = env::args().collect();
+    if args.len() < 2 {
+        eprintln!("Usage: {} <chromium|gecko>", args[0]);
+        throw_str(std::format!("Usage: {} <chromium|gecko>", args[0]).as_str());
+    }
+
+    let engine = match args[1].as_str() {
+        "chromium" => Chromium,
+        "gecko" => Gecko,
+        _ => {
+            eprintln!("Invalid argument. Usage: {} <chromium|gecko>", args[0]);
+            throw_str(
+                std::format!("Invalid argument. Usage: {} <chromium|gecko>", args[0]).as_str(),
+            );
+        }
+    };
+    engine
+}
+
+/// generates the manifest.json file for the extension.
+fn generate_manifest(engine_str: &str, output_dir: &str) -> io::Result<()> {
+    let cwd = get_current_working_dir();
+    let common_manifest_dir = cwd.clone() + "/extension/engines/common/manifest.json";
+    let engine_manifest_dir = cwd.clone() + "/extension/engines/" + engine_str + "/manifest.json";
+    let output_manifest_dir = output_dir.to_owned() + "/manifest.json";
+
+    let mut common_manifest_file =
+        fs::File::open(common_manifest_dir).expect("Failed to open manifest.json");
+    let mut common_manifest_contents = String::new();
+    common_manifest_file
+        .read_to_string(&mut common_manifest_contents)
+        .expect("Failed to read manifest.json");
+    let common_manifest_json: Value = serde_json::from_str(&common_manifest_contents)
+        .expect("Failed to parse JSON from manifest.json");
+
+    let mut engine_manifest_file =
+        fs::File::open(engine_manifest_dir).expect("Failed to open manifest.json");
+    let mut engine_manifest_contents = String::new();
+    engine_manifest_file
+        .read_to_string(&mut engine_manifest_contents)
+        .expect("Failed to read manifest.json");
+    let engine_manifest_json: Value = serde_json::from_str(&engine_manifest_contents)
+        .expect("Failed to parse JSON from manifest.json");
+
+    // merge the JSON objects
+    let mut combined_json = common_manifest_json.as_object().unwrap().clone();
+    let engine_manifest_object = engine_manifest_json.as_object().unwrap();
+    for (key, value) in engine_manifest_object.iter() {
+        combined_json.insert(key.clone(), value.clone());
+    }
+
+    // convert the JSON object to a nicely formatted JSON string
+    let pretty_json_str =
+        serde_json::to_string_pretty(&combined_json).expect("Unable to format JSON");
+    let mut output_manifest_file =
+        fs::File::create(&output_manifest_dir).expect("Failed to create combined.json");
+    output_manifest_file
+        .write_all(pretty_json_str.as_bytes())
+        .expect("Failed to write combined.json");
+    println!(
+        "manifest.json file created in {} successfully.",
+        output_manifest_dir
+    );
+
+    Ok(())
 }
 
 /// creates the executable code for the scripts.
@@ -85,67 +153,20 @@ fn remove_extraneous_files(output_dir: &str) -> io::Result<()> {
 }
 
 fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
-        println!("Usage: {} <chromium|gecko>", args[0]);
-        return;
-    }
-
-    let engine = match args[1].as_str() {
-        "chromium" => Chromium,
-        "gecko" => Gecko,
-        _ => {
-            println!("Invalid argument. Usage: {} <chromium|gecko>", args[0]);
-            return;
-        }
-    };
-    let engine_str = engine.to_string();
-    println!("Building for {}", engine_str);
-
     let cwd = get_current_working_dir();
-    let common_manifest_dir = cwd.clone() + "/extension/engines/common/manifest.json";
-    let engine_manifest_dir = cwd.clone() + "/extension/engines/" + &engine_str + "/manifest.json";
     let output_dir = cwd.clone() + "/dist";
-    let output_manifest_dir = output_dir.clone() + "/manifest.json";
     let popup_assets_dir = cwd.clone() + "/scripts/popup/assets";
 
-    let mut common_manifest_file =
-        fs::File::open(common_manifest_dir).expect("Failed to open manifest.json");
-    let mut common_manifest_contents = String::new();
-    common_manifest_file
-        .read_to_string(&mut common_manifest_contents)
-        .expect("Failed to read manifest.json");
-    let common_manifest_json: Value = serde_json::from_str(&common_manifest_contents)
-        .expect("Failed to parse JSON from manifest.json");
+    let engine = get_engine();
+    let engine_str = engine.to_string();
+    println!("Building for {} engine", engine_str);
 
-    let mut engine_manifest_file =
-        fs::File::open(engine_manifest_dir).expect("Failed to open manifest.json");
-    let mut engine_manifest_contents = String::new();
-    engine_manifest_file
-        .read_to_string(&mut engine_manifest_contents)
-        .expect("Failed to read manifest.json");
-    let engine_manifest_json: Value = serde_json::from_str(&engine_manifest_contents)
-        .expect("Failed to parse JSON from manifest.json");
-
-    // merge the JSON objects
-    let mut combined_json = common_manifest_json.as_object().unwrap().clone();
-    let engine_manifest_object = engine_manifest_json.as_object().unwrap();
-    for (key, value) in engine_manifest_object.iter() {
-        combined_json.insert(key.clone(), value.clone());
+    let res = generate_manifest(&engine_str, &output_dir);
+    if res.is_err() {
+        println!("Error generating manifest: {:?}", res);
+    } else {
+        println!("Generated manifest successfully.");
     }
-
-    // convert the JSON object to a nicely formatted JSON string
-    let pretty_json_str =
-        serde_json::to_string_pretty(&combined_json).expect("Unable to format JSON");
-    let mut output_manifest_file =
-        fs::File::create(&output_manifest_dir).expect("Failed to create combined.json");
-    output_manifest_file
-        .write_all(pretty_json_str.as_bytes())
-        .expect("Failed to write combined.json");
-    println!(
-        "manifest.json file created in {} successfully.",
-        output_manifest_dir
-    );
 
     let res = append_script_executable_code(&output_dir);
     if res.is_err() {
