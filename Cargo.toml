@@ -1,6 +1,8 @@
 [workspace]
 resolver = "2"
-members = [ "scripts/background",
+members = [
+  "scripts/background",
   "scripts/content",
+  "scripts/popup",
   "tools/browser-pack"
 ]

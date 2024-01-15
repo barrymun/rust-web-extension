@@ -10,6 +10,7 @@ build:
 	cargo build && \
 	make -C scripts/background build
 	make -C scripts/content build
+	make -C scripts/popup build
 
 build-chromium:
 	make build && \

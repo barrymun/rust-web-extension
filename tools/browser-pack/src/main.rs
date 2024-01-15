@@ -1,7 +1,8 @@
 mod utils;
 
 use serde_json::Value;
-use std::io::{Read, Write};
+use std::io::{self, Read, Write};
+use std::path::Path;
 use std::{env, fs};
 use utils::types::EngineType::{Chromium, Gecko};
 use wasm_bindgen::throw_str;
@@ -32,6 +33,25 @@ fn remove_extraneous_files() {
     }
 }
 
+/// recursively copies the contents of the specified directory to the output directory.
+fn copy_popup_assets(src_dir: &Path, output_dir: &Path) -> io::Result<()> {
+    for entry in fs::read_dir(src_dir)? {
+        let entry = entry?;
+        let entry_path = entry.path();
+
+        if entry_path.is_dir() {
+            // if it's a directory, recursively copy its contents
+            copy_popup_assets(&entry_path, output_dir)?;
+        } else if entry_path.is_file() {
+            // if it's a file, copy it to the destination
+            let entry_name = entry_path.file_name().unwrap();
+            let dest_path = output_dir.join(entry_name);
+            fs::copy(&entry_path, &dest_path)?;
+        }
+    }
+    Ok(())
+}
+
 fn main() {
     let args: Vec<String> = env::args().collect();
     if args.len() < 2 {
@@ -55,6 +75,7 @@ fn main() {
     let engine_manifest_path = cwd.clone() + "/extension/engines/" + &engine_str + "/manifest.json";
     let output_path = cwd.clone() + "/dist";
     let output_manifest_path = output_path.clone() + "/manifest.json";
+    let popup_assets_path = cwd.clone() + "/scripts/popup/assets";
 
     let mut common_manifest_file =
         fs::File::open(common_manifest_path).expect("Failed to open manifest.json");
@@ -94,7 +115,7 @@ fn main() {
         output_manifest_path
     );
 
-    let script_types = ["background", "content"];
+    let script_types = ["background", "content", "popup"];
     for value in &script_types {
         let executable_code = format!(
             "const runtime = chrome.runtime || browser.runtime;(async () => await wasm_bindgen(runtime.getURL('{}_bg.wasm')))();",
@@ -108,6 +129,14 @@ fn main() {
             .expect("Failed to open file for appending");
         writeln!(executable_file, "{}", executable_code)
             .expect("Failed to write to file for appending");
+    }
+
+    let copy_popup_assets_result =
+        copy_popup_assets(Path::new(&popup_assets_path), Path::new(&output_path));
+    if copy_popup_assets_result.is_err() {
+        println!("Error copying popup assets: {:?}", copy_popup_assets_result);
+    } else {
+        println!("Copied popup assets successfully.");
     }
 
     remove_extraneous_files();

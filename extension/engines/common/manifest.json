@@ -7,6 +7,11 @@
     "storage",
     "activeTab"
   ],
+  "action": {
+    "default_title": "rust-web-extension",
+    "default_area": "navbar",
+    "default_popup": "popup.html"
+  },
   "content_scripts": [
     {
       "matches": [
