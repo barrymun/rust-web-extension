@@ -29,7 +29,8 @@
       ],
       "resources": [
         "background_bg.wasm",
-        "content_bg.wasm"
+        "content_bg.wasm",
+        "popup_bg.wasm"
       ]
     }
   ],
